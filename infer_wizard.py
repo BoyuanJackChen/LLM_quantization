@@ -91,8 +91,10 @@ def main(args):
     model = AutoModelForCausalLM.from_pretrained(
         checkpoint,
         load_in_8bit=False,
+        load_in_4bit=True,
         torch_dtype=torch.float16,
-        device_map="auto")
+        device_map="auto"
+    )
     model.eval()
     tokenizer = AutoTokenizer.from_pretrained(checkpoint)
     loading_end = time.time()
@@ -123,12 +125,12 @@ def main(args):
             return scores
 
     # Go through each question
+    total_start = time.time()
     for question_key in all_keys:
         question = all_questions_dict[question_key]
         number = int(question[number_key].split("/")[1])
         print(f"On question {number}")
         prompt = question[prompt_key]
-        print(prompt)
         prompt = prompt.replace('    ', '\t')
         prompt = alpaca_prompt(prompt)
         prompt_ids = tokenizer.batch_encode_plus([prompt]*max(pass_at,1), return_tensors="pt", truncation=True, max_length=2048).to(torch.cuda.current_device())
@@ -172,8 +174,8 @@ def main(args):
         print(answer_trimmed[0])
         print(f"Time to generate is {time.time() - start} seconds")
         print(f"Per-token time is {(time.time() - start)/num_tokens} seconds")
+    print(f"Total time consumption: {time.time() - total_start} seconds")
         
-                
 
 if __name__== "__main__":
     main(FLAGS)
